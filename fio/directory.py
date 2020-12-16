@@ -34,4 +34,4 @@ class Directory:
         return(self.path)
 
     def exists(self) -> bool:
-        pass
+        return os.path.isdir(self.path)
