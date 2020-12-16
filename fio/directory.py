@@ -1,3 +1,8 @@
+import os
+from typing import List
+from fio.file import File
+
+
 class Directory:
 
     def __init__(self, path: str):
