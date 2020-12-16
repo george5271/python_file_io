@@ -32,3 +32,6 @@ class Directory:
 
     def __repr__(self):
         return(self.path)
+
+    def exists(self) -> bool:
+        pass
