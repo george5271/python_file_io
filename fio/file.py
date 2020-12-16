@@ -11,4 +11,5 @@ class File:
             return str(file)
 
     def exists(self) -> bool:
-        pass
+        import os.path
+        return os.path.isfile(self.path)
