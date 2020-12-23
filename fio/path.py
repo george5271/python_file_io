@@ -35,6 +35,12 @@ class PathBase:
     def copy(self, target: 'PathBase'):
         pass
 
+    def remove(self):
+        pass
+
+    def create_path(self, item_name):
+        pass
+
     def __getitem__(self, name: str):
         return Path(f'{self.path}/{name}')
 
@@ -82,4 +88,10 @@ class Path(PathBase):
         return os.stat(self.path).st_mtime
 
     def copy(self, target: 'PathBase'):
-        shutil.copy2(self.path, target.path)
+        shutil.copy2(self.path, target.path)  # TODO: Возможно стоить заменить на специализированное копирование файлов / каталогов
+
+    def remove(self):
+        os.remove(self.path)
+
+    def create_path(self, item_name: str):
+        return Path(f"{self.path}/{item_name}")

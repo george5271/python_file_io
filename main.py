@@ -1,8 +1,6 @@
 # from fio.file import File
-from typing import List
+from typing import List, Dict
 
-from fio.directory import Directory
-from fio.file import File
 from fio.path import Path, PathBase
 
 
@@ -95,13 +93,32 @@ class VirtualDirectory(VirtualPath):
                 return item
         return None
 
+# test_dir2/2.txt -> 2.txt
+def extract_name(path):
+    pass                                                    # TODO: implement
 
+#
 def sync(source: PathBase, target: PathBase):
-    if source.is_dir() and target.is_dir():
+    if source.is_dir() and not target.exists():
+        source.copy(target)
+    elif source.is_dir() and target.is_dir():
         source_items = source.get_items()
         target_items = target.get_items()
 
-    pass
+        removed_items: List['PathBase'] = []                # TODO: implement
+        new_items: List['PathBase'] = []                    # TODO: implement
+        modified_items: Dict['PathBase', 'PathBase'] = {}   # TODO: implement
+        for item in removed_items:
+            item.remove()
+        for item in new_items:
+            item_name = extract_name(item.path())
+            new_path = target.create_path(item_name)
+            item.copy(new_path)
+        for (source_item, target_item) in modified_items.items():
+            source_item.copy(target_item)
+    elif source.is_dir() and target.is_file():
+        target.remove()
+        source.copy(target)
 
 
 test_dir2 = VirtualDirectory('test_dir2')
@@ -110,19 +127,5 @@ source_dir = VirtualDirectory('test_dir')
 source_dir.append(VirtualFile('1.txt', 3, 0))
 source_dir.append(test_dir2)
 
-print(source_dir['test_dir2'].path())
 
-print(source_dir)
-root_path = Path("test_dir")
-print(Path("test_dir").mtime())
-print(Path("test_dir/1.txt").size())
-print(root_path.exists())
-print(root_path.get_items())
-
-# Написать тесты для всех функций в Path'е
-
-
-# assert Directory("test_dir").exists()
-# assert File("test_dir/1.txt").exists()
-# assert not Directory("not_exists_dir").exists()
-# assert not File("not_exists_file.txt").exists()
+sync(Path('test_dir'), Path('backup'))  # Ожидается, что создастся каталог `backup` с копией содержимого каталога `test_dir`
