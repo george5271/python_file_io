@@ -1,11 +1,19 @@
 # from fio.file import File
 from fio.directory import Directory
 from fio.file import File
-from fio.path import Path
+from fio.path import Path, PathBase
+
+
+def sync(source: PathBase, target: PathBase):
+    pass
+
+
 
 root_path = Path("test_dir")
-print(root_path.exists())
-print(root_path.get_items())
+print(Path("test_dir").mtime())
+print(Path("test_dir/1.txt").size())
+# print(root_path.exists())
+# print(root_path.get_items())
 # Написать тесты для всех функций в Path'е
 
 

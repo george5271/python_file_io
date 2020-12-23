@@ -1,13 +1,49 @@
 from typing import List
 import os
+import shutil
 
-class Path:
+class PathBase:
 
     def __init__(self, path: str):
         self.path = path
 
-    def path(self):
+    def path(self) -> str:
         return self.path
+
+    def exists(self) -> bool:
+        pass
+
+    def get_items(self) -> List['Path']:
+        pass
+
+    def is_file(self):
+        pass
+
+    def is_dir(self):
+        pass
+
+    def get_content(self):
+        pass
+
+    def size(self):
+        pass
+
+    def mtime(self):
+        pass
+
+    def copy(self, target: 'Path'):
+        pass
+
+    def __str__(self):
+        return self.path
+
+    def __repr__(self):
+        return self.path
+
+
+class Path(PathBase):
+    def __init__(self, path: str):
+        super().__init__(path)
 
     def exists(self) -> bool:
         return os.path.isfile(self.path) or os.path.isdir(self.path)
@@ -35,8 +71,11 @@ class Path:
         else:
             raise KeyError("Путь не существует или не является файлом")
 
-    def __str__(self):
-        return self.path
+    def size(self):
+        return os.stat(self.path).st_size
 
-    def __repr__(self):
-        return self.path
+    def mtime(self):
+        return os.stat(self.path).st_mtime
+
+    def copy(self, target: 'Path'):
+        shutil.copy2(self.path, target.path)
