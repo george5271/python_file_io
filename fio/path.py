@@ -2,6 +2,7 @@ from typing import List
 import os
 import shutil
 
+
 class PathBase:
 
     def __init__(self, path: str):
@@ -13,7 +14,7 @@ class PathBase:
     def exists(self) -> bool:
         pass
 
-    def get_items(self) -> List['Path']:
+    def get_items(self) -> List['PathBase']:
         pass
 
     def is_file(self):
@@ -31,8 +32,11 @@ class PathBase:
     def mtime(self):
         pass
 
-    def copy(self, target: 'Path'):
+    def copy(self, target: 'PathBase'):
         pass
+
+    def __getitem__(self, name: str):
+        return Path(f'{self.path}/{name}')
 
     def __str__(self):
         return self.path
@@ -77,5 +81,5 @@ class Path(PathBase):
     def mtime(self):
         return os.stat(self.path).st_mtime
 
-    def copy(self, target: 'Path'):
+    def copy(self, target: 'PathBase'):
         shutil.copy2(self.path, target.path)
