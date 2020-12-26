@@ -5,11 +5,8 @@ import shutil
 
 class PathBase:
 
-    def __init__(self, path: str):
-        self.path = path
-
-    def path(self) -> str:
-        return self.path
+    def get_path(self) -> str:
+        pass
 
     def exists(self) -> bool:
         pass
@@ -38,22 +35,22 @@ class PathBase:
     def remove(self):
         pass
 
-    def create_path(self, item_name):
-        pass
+    def create_path(self, item_name: str) -> 'PathBase':
+        return Path(f'{self.get_path()}/{item_name}')
 
-    def __getitem__(self, name: str):
-        return Path(f'{self.path}/{name}')
+    def __getitem__(self, item_name: str):
+        return self.create_path(item_name)
 
     def __str__(self):
-        return self.path
+        return self.get_path()
 
     def __repr__(self):
-        return self.path
+        return self.get_path()
 
 
 class Path(PathBase):
     def __init__(self, path: str):
-        super().__init__(path)
+        self.path = path
 
     def exists(self) -> bool:
         return os.path.isfile(self.path) or os.path.isdir(self.path)
@@ -88,7 +85,7 @@ class Path(PathBase):
         return os.stat(self.path).st_mtime
 
     def copy(self, target: 'PathBase'):
-        shutil.copy2(self.path, target.path)  # TODO: Возможно стоить заменить на специализированное копирование файлов / каталогов
+        shutil.copy2(self.get_path(), target.get_path())  # TODO: Возможно стоить заменить на специализированное копирование файлов / каталогов
 
     def remove(self):
         os.remove(self.path)

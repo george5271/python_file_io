@@ -1,101 +1,100 @@
-# from fio.file import File
-from typing import List, Dict
+from typing import List, Dict, Optional, Tuple
 
-from fio.path import Path, PathBase
+from fio.path import PathBase
 
 
-class PathTest(PathBase):
+class VirtualPath(PathBase):
 
-    def __init__(self, virtual_path: 'VirtualPath'):
-        super().__init__(virtual_path.name)
-        self.virtual_path = virtual_path
+    def __init__(self, path: str, virtual_item: Optional['VirtualItem'] = None):
+        self.path: str = path
+        self.virtual_item: Optional['VirtualItem'] = virtual_item
 
+    def set_virtual_item(self, virtual_item: Optional['VirtualItem']):
+        self.virtual_item = virtual_item
+
+    def get_path(self) -> str:
+        return self.path
 
     def exists(self) -> bool:
-        return self.virtual_path is not None
+        return self.virtual_item is not None
+
+    def __virtual_item_to_path(self, pair: Tuple) -> 'VirtualPath':
+        return VirtualPath(f'{self.get_path()}/{pair[0]}', pair[1])
 
     def get_items(self) -> List['PathBase']:
-        if self.virtual_path is VirtualDirectory:
-            return self.virtual_path.items
+        if isinstance(self.virtual_item, VirtualDirectory):
+            self.virtual_item: VirtualDirectory
+            return list(map(self.__virtual_item_to_path, self.virtual_item.items.items()))
         pass
 
     def is_file(self):
-        return self.virtual_path is VirtualFile
+        return isinstance(self.virtual_item, VirtualFile)
 
     def is_dir(self):
-        return self.virtual_path is VirtualDirectory
+        return isinstance(self.virtual_item, VirtualDirectory)
 
     def get_content(self):
         pass
 
     def size(self):
-        if self.virtual_path is VirtualFile:
-            return self.virtual_path.size
+        if isinstance(self.virtual_item, VirtualFile):
+            self.virtual_item: VirtualFile
+            return self.virtual_item.size
         return 0
 
     def mtime(self):
-        if self.virtual_path is VirtualFile:
-            return self.virtual_path.mtime
+        if isinstance(self.virtual_item, VirtualFile):
+            self.virtual_item: VirtualFile
+            return self.virtual_item.mtime
         return 0
 
-    def copy(self, target: 'Path'):
-        pass
+    def copy(self, target: 'PathBase'):
+        if not isinstance(target, VirtualPath):
+            raise Exception('not supported path')
+        target: VirtualPath
+        target.virtual_item = self.virtual_item
+
+    def create_path(self, item_name: str) -> 'PathBase':
+        existed_item = None
+        if isinstance(self.virtual_item, VirtualDirectory):
+            self.virtual_item: VirtualDirectory
+            existed_item = self.virtual_item.items.get(item_name, None)
+        return VirtualPath(f'{self.get_path()}/{item_name}', existed_item)
+
+    def remove(self):
+        self.virtual_item = None
 
 
-class VirtualPath:
-
-    parent_dir: str = None
-
-    def __init__(self, name: str):
-        self.name = name
+class VirtualItem:
+    pass
 
 
-    def path(self):
-        if self.parent_dir is None:
-            return self.name
-        return f"{self.parent_dir}/{self.name}"
+class VirtualFile(VirtualItem):
 
-
-class VirtualFile(VirtualPath):
-
-    def __init__(self, name: str, size: int, mtime: float):
-        super().__init__(name)
+    def __init__(self, size: int, mtime: float):
         self.size = size
         self.mtime = mtime
 
-    def __str__(self) -> str:
-        return f"name: {self.name}, size: {self.size}, mtime: {self.mtime}, path: {self.path()}"
 
-    def __repr__(self) -> str:
-        return self.__str__()
+class VirtualDirectory(VirtualItem):
 
+    def __init__(self):
+        self.items: Dict[str, VirtualItem] = {}
 
-class VirtualDirectory(VirtualPath):
+    def append(self, name: str, item: VirtualItem):
+        self.items[name] = item
 
-    items: List[VirtualPath] = []
+    def __getitem__(self, name: str) -> Optional[VirtualItem]:
+        return self.items.get(name, None)
 
-    def __init__(self, name: str):
-        super().__init__(name)
-
-    def append(self, path: VirtualPath):
-        path.parent_dir = self.path()
-        self.items.append(path)
-
-    def __str__(self) -> str:
-        return f"name: {self.name}, items: {self.items}, path: {self.path()}"
-
-    def __repr__(self) -> str:
-        return self.__str__()
-
-    def __getitem__(self, name: str):
-        for item in self.items:
-            if item.name == name:
-                return item
-        return None
 
 # test_dir2/2.txt -> 2.txt
-def extract_name(path):
-    pass                                                    # TODO: implement
+def extract_name(path: str) -> str:
+    rindex = path.rfind('/')
+    if rindex == -1:
+        return path
+    return path[rindex + 1:]
+
 
 #
 def sync(source: PathBase, target: PathBase):
@@ -105,13 +104,13 @@ def sync(source: PathBase, target: PathBase):
         source_items = source.get_items()
         target_items = target.get_items()
 
-        removed_items: List['PathBase'] = []                # TODO: implement
-        new_items: List['PathBase'] = []                    # TODO: implement
-        modified_items: Dict['PathBase', 'PathBase'] = {}   # TODO: implement
+        removed_items: List['PathBase'] = []  # TODO: implement
+        new_items: List['PathBase'] = []  # TODO: implement
+        modified_items: Dict['PathBase', 'PathBase'] = {}  # TODO: implement
         for item in removed_items:
             item.remove()
         for item in new_items:
-            item_name = extract_name(item.path())
+            item_name = extract_name(item.get_path())
             new_path = target.create_path(item_name)
             item.copy(new_path)
         for (source_item, target_item) in modified_items.items():
@@ -121,11 +120,27 @@ def sync(source: PathBase, target: PathBase):
         source.copy(target)
 
 
-test_dir2 = VirtualDirectory('test_dir2')
-test_dir2.append(VirtualFile('2.txt', 1, 0))
-source_dir = VirtualDirectory('test_dir')
-source_dir.append(VirtualFile('1.txt', 3, 0))
-source_dir.append(test_dir2)
+# Создаём виртуальный каталог, идентичный настоящему
+test_dir2 = VirtualDirectory()
+test_dir2.append('2.txt', VirtualFile(1, 0))
+test_dir = VirtualDirectory()
+test_dir.append('1.txt', VirtualFile(3, 0))
+test_dir.append('test_dir2', test_dir2)
+
+# pt = PathTest('test_dir', test_dir)
+# print(pt['1.txt'].exists())
+
+backup = VirtualPath('backup')
+sync(VirtualPath('test_dir', test_dir), backup)  # Ожидается, что создастся каталог `backup` с копией содержимого каталога `test_dir`
+
+assert backup['test_dir'].exists()
+assert backup['test_dir'].is_dir()
+assert backup['test_dir']['1.txt'].exists()
+assert backup['test_dir']['1.txt'].is_file()
+assert backup['test_dir']['test_dir2'].exists()
+assert backup['test_dir']['test_dir2'].is_dir()
+assert backup['test_dir']['test_dir2']['2.txt'].exists()
+assert backup['test_dir']['test_dir2']['2.txt'].is_file()
 
 
-sync(Path('test_dir'), Path('backup'))  # Ожидается, что создастся каталог `backup` с копией содержимого каталога `test_dir`
+
