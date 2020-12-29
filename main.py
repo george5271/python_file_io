@@ -95,7 +95,7 @@ class VirtualDirectory(VirtualPath):
 
 # test_dir2/2.txt -> 2.txt
 def extract_name(path):
-    pass                                                    # TODO: implement
+    return str(path.split('/')[-1])
 
 #
 def sync(source: PathBase, target: PathBase):
@@ -105,8 +105,8 @@ def sync(source: PathBase, target: PathBase):
         source_items = source.get_items()
         target_items = target.get_items()
 
-        removed_items: List['PathBase'] = []                # TODO: implement
-        new_items: List['PathBase'] = []                    # TODO: implement
+        removed_items: List['PathBase'] = list(set(source_items)-set(target_items))
+        new_items: List['PathBase'] = list(set(target_items)-set(source_items))
         modified_items: Dict['PathBase', 'PathBase'] = {}   # TODO: implement
         for item in removed_items:
             item.remove()
